@@ -1,0 +1,20 @@
+# 构建产物
+build/
+*.o
+ucassniffer
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# macOS
+.DS_Store
+
+# 临时文件
+*.tmp
+*.log
+
+# 旧 git 历史备份
+.git-backup/
