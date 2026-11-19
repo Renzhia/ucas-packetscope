@@ -119,6 +119,7 @@ typedef struct tree_node {
     int      child_count;
     int      first_child;            /* 在节点数组中的索引 */
     int      next_sibling;           /* 在节点数组中的索引 */
+    int      parent;                 /* 父节点索引, 根节点为 -1 */
 } tree_node_t;
 
 /* ---------- 数据包结构 ---------- */

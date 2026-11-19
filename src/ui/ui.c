@@ -206,75 +206,40 @@ static void draw_detail(void)
         return;
     }
 
-    /* 遍历节点树，深度优先输出 */
+    /* 节点按创建顺序存放（父节点先于子节点），顺序遍历即为深度优先次序；
+       缩进层级由 parent 链计算。旧实现用 first_child 反查根节点，
+       会把兄弟链上的节点误判为根而重复输出。 */
     int avail = detail_rows() - 2; /* 减去边框 */
-    int shown = 0;
 
-    /* 简单的深度优先遍历 */
-    for (int i = 0; i < pkt->node_count && shown < avail + ui.detail_scroll; i++) {
-        /* 判断是否是根节点（没有父节点被引用） */
-        int is_root = 1;
-        for (int j = 0; j < i; j++) {
-            if (pkt->nodes[j].first_child == i) {
-                is_root = 0;
-                break;
-            }
+    for (int i = 0; i < pkt->node_count; i++) {
+        /* 计算节点深度 */
+        int depth = 0;
+        int p = pkt->nodes[i].parent;
+        while (p >= 0 && depth < 32) {
+            depth++;
+            p = pkt->nodes[p].parent;
         }
-        /* 检查是否是某节点的子节点 */
-        if (!is_root) continue;
 
-        /* 深度优先 */
-        int stack[64], depths[64];
-        int sp = 0;
-        stack[0] = i;
-        depths[0] = 0;
-        sp = 1;
+        if (i < ui.detail_scroll)
+            continue;
+        int row = i - ui.detail_scroll + 1;
+        if (row > avail)
+            break;
 
-        while (sp > 0 && shown < avail + ui.detail_scroll) {
-            int node = stack[sp - 1];
-            int depth = depths[sp - 1];
-            sp--;
-
-            if (shown >= ui.detail_scroll) {
-                int row = shown - ui.detail_scroll + 1;
-                if (row >= 1 && row < avail + 1) {
-                    /* 缩进 */
-                    for (int d = 0; d < depth; d++)
-                        mvwprintw(ui.win_detail, row, 2 + d * 2, "  ");
-                    /* 节点名和值 */
-                    if (pkt->nodes[node].value[0]) {
-                        int maxw = ui.cols - 4 - depth * 2 - 2;
-                        char val_trunc[NODE_VAL_LEN];
-                        int vl = strlen(pkt->nodes[node].value);
-                        if (vl > maxw) vl = maxw;
-                        memcpy(val_trunc, pkt->nodes[node].value, vl);
-                        val_trunc[vl] = '\0';
-                        mvwprintw(ui.win_detail, row, 2 + depth * 2, "%s: %s",
-                                  pkt->nodes[node].name, val_trunc);
-                    } else {
-                        wattron(ui.win_detail, A_BOLD);
-                        mvwprintw(ui.win_detail, row, 2 + depth * 2, "%s", pkt->nodes[node].name);
-                        wattroff(ui.win_detail, A_BOLD);
-                    }
-                }
-            }
-            shown++;
-
-            /* 子节点逆序入栈（保证正序输出） */
-            int child = pkt->nodes[node].first_child;
-            /* 收集所有子节点 */
-            int children[64];
-            int cc = 0;
-            while (child >= 0 && cc < 64) {
-                children[cc++] = child;
-                child = pkt->nodes[child].next_sibling;
-            }
-            for (int c = cc - 1; c >= 0; c--) {
-                if (sp < 63) {
-                    stack[sp] = children[c];
-                    depths[sp] = depth + 1;
-                    sp++;
-                }
+        {
+            if (pkt->nodes[i].value[0]) {
+                int maxw = ui.cols - 4 - depth * 2 - 2;
+                char val_trunc[NODE_VAL_LEN];
+                int vl = strlen(pkt->nodes[i].value);
+                if (vl > maxw) vl = maxw;
+                memcpy(val_trunc, pkt->nodes[i].value, vl);
+                val_trunc[vl] = '\0';
+                mvwprintw(ui.win_detail, row, 2 + depth * 2, "%s: %s",
+                          pkt->nodes[i].name, val_trunc);
+            } else {
+                wattron(ui.win_detail, A_BOLD);
+                mvwprintw(ui.win_detail, row, 2 + depth * 2, "%s", pkt->nodes[i].name);
+                wattroff(ui.win_detail, A_BOLD);
             }
         }
     }

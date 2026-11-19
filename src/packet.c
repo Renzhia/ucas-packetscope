@@ -118,6 +118,7 @@ int tree_add_node(packet_t *pkt, int parent, const char *name, const char *value
     n->child_count = 0;
     n->first_child = -1;
     n->next_sibling = -1;
+    n->parent = (parent >= 0 && parent < pkt->node_count - 1) ? parent : -1;
 
     if (parent >= 0 && parent < pkt->node_count - 1) {
         tree_node_t *p = &pkt->nodes[parent];
